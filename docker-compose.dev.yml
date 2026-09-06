@@ -1,0 +1,12 @@
+services:
+  webhook-cron-trigger:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./app:/srv/app
+      - ./tests:/srv/tests
+    env_file: .env
+    restart: unless-stopped

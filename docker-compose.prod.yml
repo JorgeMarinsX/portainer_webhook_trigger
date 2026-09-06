@@ -1,0 +1,8 @@
+services:
+  webhook-cron-trigger:
+    image: ${REGISTRY}/${IMAGE_NAME}:latest
+    restart: unless-stopped
+    environment:
+      TZ: ${TZ}
+      JOBS: ${JOBS}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}

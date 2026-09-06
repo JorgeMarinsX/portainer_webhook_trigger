@@ -1,0 +1,20 @@
+# syntax=docker/dockerfile:1
+
+FROM ghcr.io/astral-sh/uv:python3.13-bookworm-slim AS builder
+ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy UV_PYTHON_DOWNLOADS=never
+WORKDIR /srv
+# Lockfile-only install first, so app changes don't rebuild dependencies.
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen --no-dev
+
+FROM python:3.13-slim
+ENV PATH="/srv/.venv/bin:$PATH" \
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1
+WORKDIR /srv
+RUN useradd --system --no-create-home --uid 10001 app
+COPY --from=builder --chown=app /srv/.venv /srv/.venv
+COPY --chown=app app ./app
+USER app
+EXPOSE 8000
+CMD ["uvicorn", "main:app", "--app-dir", "/srv/app", "--host", "0.0.0.0", "--port", "8000"]
