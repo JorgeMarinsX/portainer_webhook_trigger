@@ -5,6 +5,7 @@ description = "Calls Portainer webhooks on a cron schedule."
 requires-python = ">=3.13"
 dependencies = [
     "apscheduler>=3.11",
+    "tzdata>=2025.1",
     "uvicorn>=0.35",
 ]
 
