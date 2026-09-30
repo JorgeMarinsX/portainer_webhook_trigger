@@ -10,6 +10,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from jobs import fire, parse_jobs
+from notifications import notify
 
 logging.basicConfig(
     level=os.environ.get("LOG_LEVEL", "INFO").upper(),
@@ -44,8 +45,10 @@ scheduler = AsyncIOScheduler(
 )
 
 
-async def _run(name: str) -> None:
-    await asyncio.to_thread(fire, BY_NAME[name])
+async def _run(name: str) -> bool:
+    ok = await asyncio.to_thread(fire, BY_NAME[name])
+    await asyncio.to_thread(notify, name, ok, _next_run(name))
+    return ok
 
 
 def _start() -> None:
@@ -91,7 +94,7 @@ async def _http(scope, send) -> None:
         if name not in BY_NAME:
             return await _send_json(send, 404, {"error": f"unknown job {name!r}", "jobs": list(BY_NAME)})
         log.info("job %s triggered manually", name)
-        ok = await asyncio.to_thread(fire, BY_NAME[name])
+        ok = await _run(name)
         return await _send_json(send, 200 if ok else 502, {"job": name, "ok": ok})
 
     await _send_json(send, 404, {"error": "not found", "routes": ["GET /health", "POST /trigger/{job_name}"]})

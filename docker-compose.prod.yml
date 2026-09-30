@@ -6,3 +6,4 @@ services:
       TZ: ${TZ}
       JOBS: ${JOBS}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      DISCORD_WEBHOOK: ${DISCORD_WEBHOOK:-}

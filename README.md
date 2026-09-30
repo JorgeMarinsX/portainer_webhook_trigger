@@ -13,6 +13,9 @@ Calls **Portainer webhooks on a schedule** so production stacks redeploy at fixe
   the next scheduled run. One failing job never affects the others, and never crashes the process.
 - Missed runs (container was down) are **not** backfilled — `coalesce=True`,
   `misfire_grace_time=60`.
+- Every trigger (scheduled or manual) posts its outcome to each configured channel in
+  `app/notifications/`. Success is posted silently; only failures ping. A broken notifier is
+  logged and never affects the trigger.
 
 ## HTTP
 
@@ -30,6 +33,7 @@ No auth. The container is internal-only until it is put behind Traefik.
 | `JOBS` | yes | JSON array of `{name, cron, url}` objects |
 | `TZ` | yes | IANA timezone, e.g. `America/Sao_Paulo` |
 | `LOG_LEVEL` | no | default `INFO` |
+| `DISCORD_WEBHOOK` | no | Discord webhook URL for trigger notifications; unset = off. A secret. |
 
 ```json
 [
@@ -54,7 +58,7 @@ curl -X POST localhost:8000/trigger/prod-api
 
 Source is bind-mounted and uvicorn runs with `--reload`.
 
-Tests (config parsing/validation only):
+Tests (config parsing/validation, notification fan-out):
 
 ```bash
 docker compose -f docker-compose.dev.yml run --rm webhook-cron-trigger pytest
@@ -87,7 +91,7 @@ The registry host, user, and password are never hardcoded in this repo.
 1. **Portainer → Registries** — add the private registry with its username and password so
    the stack can pull. This is a manual, one-time step; it is deliberately not automated.
 2. Create a stack from `docker-compose.prod.yml` and set the stack environment variables:
-   `REGISTRY`, `IMAGE_NAME`, `TZ`, `JOBS` (and optionally `LOG_LEVEL`).
+   `REGISTRY`, `IMAGE_NAME`, `TZ`, `JOBS` (and optionally `LOG_LEVEL`, `DISCORD_WEBHOOK`).
 3. To ship a new version, push a `-prod` tag, then redeploy the stack in Portainer so it
    re-pulls `latest` — the same webhook mechanism this service triggers.
 
